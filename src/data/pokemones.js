@@ -1,5 +1,4 @@
 //Todo lo que habla con PokeAPI vive aqui
-import { normalizar } from "../pokemon";
 
 const API = "https://pokeapi.co/api/v2"
 
@@ -21,4 +20,15 @@ export async function listarPokemones(offset, limite) {
         lista.results.map(p => fetch(p.url).then(r => r.json()))
     )
     return { total: lista.count, pokemones: detalles.map(normalizar)}
+}
+
+export function normalizar(raw) {
+  return {
+    id: raw.id,
+    nombre: raw.name,
+    img: raw.sprites.other['official-artwork'].front_default,
+    tipos: raw.types.map(t => t.type.name),
+    altura: raw.height / 10, // metros
+    peso: raw.weight / 10,   // kg
+  }
 }

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { PokemonCard } from './components/PokemonCard'
-import { normalizar } from './pokemon'
 import {
   MAX_EQUIPO, MENSAJES, crearEquipo, agregarPokemon, quitarPokemon, ponerNombre, validarEquipo,
 } from './logic/equipo'
