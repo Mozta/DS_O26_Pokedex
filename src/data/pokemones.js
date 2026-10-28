@@ -9,3 +9,16 @@ export async function buscarPokemon(consulta) {
     return normalizar(await res.json())
     
 }
+
+export async function listarPokemones(offset, limite) {
+    // 1. La lista de pokemon (nombre o id, url)
+    const res = await fetch(`${API}/pokemon?limit=${limite}&offset=${offset}`)
+    if (!res.ok) throw new Error(`Error al cargar la lista (${res.status})`)
+    const lista = await res.json()
+    
+    // 2. Pedir detalle de cada pokemon (en paralelo)
+    const detalles = await Promise.all(
+        lista.results.map(p => fetch(p.url).then(r => r.json()))
+    )
+    return { total: lista.count, pokemones: detalles.map(normalizar)}
+}
