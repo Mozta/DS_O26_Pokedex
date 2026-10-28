@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
-import { collection, doc, getDocs, setDoc } from 'firebase/firestore'
-import { db } from './firebase'
 import { PokemonCard } from './components/PokemonCard'
 import { normalizar } from './pokemon'
-import { MAX_EQUIPO, crearEquipo, agregarPokemon } from './logic/equipo'
+import {
+  MAX_EQUIPO, MENSAJES, crearEquipo, agregarPokemon, quitarPokemon, ponerNombre, validarEquipo,
+} from './logic/equipo'
+import { guardarEquipo, cargarEquipos, borrarEquipo } from './data/equipos'
 import './App.css'
 
 const API = "https://pokeapi.co/api/v2"
@@ -14,7 +15,9 @@ function App() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
 
-  const [equipo, setEquipo] = useState(crearEquipo())
+  const [equipo, setEquipo] = useState(crearEquipo())  // el equipo que estás armando
+  const [guardados, setGuardados] = useState([])        // los equipos que ya están en Firestore
+  const [guardando, setGuardando] = useState(false)
   const [errorEquipo, setErrorEquipo] = useState(null)
   
   const [offset, setOffset] = useState(0)   // desde qué pokemon empieza la página
@@ -23,16 +26,38 @@ function App() {
   const [texto, setTexto] = useState('')        // lo que se escribe
   const [consulta, setConsulta] = useState('')  // lo que se busca ('' = ver la lista)
 
-  async function agregar(p){
-    // Las reglas (máximo 6, sin repetidos) ya no viven aquí: las decide logic/equipo.js
-    const nuevo = agregarPokemon(equipo, p)
-    if (nuevo === equipo) return // no entró: no hay nada que guardar
+  // Las reglas (máximo 6, sin repetidos) las decide logic/equipo.js
+  function agregar(p) {
+    setEquipo(agregarPokemon(equipo, p))
+  }
+
+  function quitar(id) {
+    setEquipo(quitarPokemon(equipo, id))
+  }
+
+  // Hablar con Firestore le toca a data/equipos.js
+  async function guardar(e) {
+    e.preventDefault()
+    setGuardando(true)
+    setErrorEquipo(null)
     try {
-      setErrorEquipo(null)
-      await setDoc(doc(db, 'equipo', String(p.id)), p)
-      setEquipo(nuevo)
+      await guardarEquipo(equipo)
+      setEquipo(crearEquipo())
+      setGuardados(await cargarEquipos())
     } catch (err) {
-      setErrorEquipo(`No se pudo guardar en el equipo: ${err.message}`)
+      setErrorEquipo(`No se pudo guardar el equipo: ${err.message}`)
+    } finally {
+      setGuardando(false)
+    }
+  }
+
+  async function borrar(id) {
+    setErrorEquipo(null)
+    try {
+      await borrarEquipo(id)
+      setGuardados(guardados.filter((g) => g.id !== id))
+    } catch (err) {
+      setErrorEquipo(`No se pudo borrar el equipo: ${err.message}`)
     }
   }
 
@@ -85,18 +110,16 @@ function App() {
   }, [offset, consulta])
 
   useEffect(() => {
-    getDocs(collection(db, "equipo"))
-    .then((snap) => 
-      setEquipo({
-        ...crearEquipo(),
-        pokemones: snap.docs.map((d) => ({tipos: [], ...d.data(), id: Number(d.id)})),
-      })
-    )
-    .catch((e) => setErrorEquipo(`No se pudo cargar el equipo: ${e.message}`))
+    cargarEquipos()
+      .then(setGuardados)
+      .catch((e) => setErrorEquipo(`No se pudieron cargar los equipos: ${e.message}`))
   }, [])
 
   const desde = offset + 1
   const hasta = Math.min(offset + LIMITE, total)
+
+  // Primera puerta: la pantalla no deja guardar un equipo inválido (la segunda está en data/)
+  const { valido, errores } = validarEquipo(equipo)
 
   return (
     <main>
@@ -130,9 +153,20 @@ function App() {
       )}
 
       <h2>Mi equipo ({equipo.pokemones.length} / {MAX_EQUIPO})</h2>
+      <form onSubmit={guardar}>
+        <input
+          value={equipo.nombre}
+          onChange={e => setEquipo(ponerNombre(equipo, e.target.value))}
+          placeholder="Nombre del equipo"
+        />
+        <button type="submit" disabled={!valido || guardando}>
+          {guardando ? 'Guardando...' : 'Guardar equipo'}
+        </button>
+      </form>
+      {!valido && <p>{errores.map((codigo) => MENSAJES[codigo]).join(' · ')}</p>}
       {errorEquipo && <p className='error'>{errorEquipo}</p>}
       <section className='equipo'>
-        {equipo.pokemones.map((p) => <PokemonCard key={p.id} pokemon={p} />)}
+        {equipo.pokemones.map((p) => <PokemonCard key={p.id} pokemon={p} onQuitar={quitar} />)}
       </section>
 
 
@@ -143,6 +177,17 @@ function App() {
           {pokemones.map(p => <PokemonCard key={p.id} pokemon={p} onAgregar={agregar} />)}
         </section>
       )}
+
+      <h2>Equipos guardados</h2>
+      {guardados.length === 0 && <p>Todavía no hay equipos guardados</p>}
+      {guardados.map((g) => (
+        <article key={g.id}>
+          <h3>{g.nombre} <button onClick={() => borrar(g.id)}>Borrar</button></h3>
+          <section className='equipo'>
+            {g.pokemones.map((p) => <PokemonCard key={p.id} pokemon={p} />)}
+          </section>
+        </article>
+      ))}
     </main>
   )
 }
