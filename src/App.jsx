@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react'
 import { PokemonCard } from './components/PokemonCard'
-import { normalizar } from './pokemon'
 import {
   MAX_EQUIPO, MENSAJES, crearEquipo, agregarPokemon, quitarPokemon, ponerNombre, validarEquipo,
 } from './logic/equipo'
 import { guardarEquipo, cargarEquipos, borrarEquipo } from './data/equipos'
+import { buscarPokemon, listarPokemones } from './data/pokemones'
 import './App.css'
 
-const API = "https://pokeapi.co/api/v2"
 const LIMITE = 25 // pokemones por página
 
 function App() {
@@ -79,23 +78,14 @@ function App() {
       setError(null)
       try {
         if (consulta) {
-          const res = await fetch(`${API}/pokemon/${consulta}`)
-          if (!res.ok) throw new Error(`Pokemon no encontrado (${res.status})`)
-          const data = await res.json()
-          if (!cancelado) setPokemones([normalizar(data)])
+          const pokemon = await buscarPokemon(consulta)
+          if (!cancelado) setPokemones([pokemon])
         } else {
-          // 1. La lista solo trae { name, url } de cada pokemon
-          const res = await fetch(`${API}/pokemon?limit=${LIMITE}&offset=${offset}`)
-          if (!res.ok) throw new Error(`Error al cargar la lista (${res.status})`)
-          const lista = await res.json()
+          const pagina = await listarPokemones(offset, LIMITE)
 
-          // 2. Pedimos el detalle de los 25 en paralelo
-          const detalles = await Promise.all(
-            lista.results.map(p => fetch(p.url).then(r => r.json()))
-          )
           if (!cancelado) {
-            setTotal(lista.count)
-            setPokemones(detalles.map(normalizar))
+            setTotal(pagina.total)
+            setPokemones(pagina.pokemones)
           }
         }
       } catch (err) {
