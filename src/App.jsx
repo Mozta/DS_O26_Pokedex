@@ -79,12 +79,12 @@ function App() {
       try {
         if (consulta) {
           const pokemon = await buscarPokemon(consulta)
-          if (!consulta) setPokemones([pokemon])
+          if (!cancelado) setPokemones([pokemon])
         } else {
           const pagina = await listarPokemones(offset, LIMITE)
 
           if (!cancelado) {
-            setTotal(pagina.count)
+            setTotal(pagina.total)
             setPokemones(pagina.pokemones)
           }
         }

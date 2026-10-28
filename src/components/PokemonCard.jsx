@@ -1,4 +1,4 @@
-// Recibe un pokemon normalizado (ver src/pokemon.js), venga de PokéAPI o de Firestore
+// Recibe un pokemon normalizado (ver src/data/pokemones.js), venga de PokéAPI o de Firestore
 export const PokemonCard = ({ pokemon, onAgregar, onQuitar }) => {
   return (
     <article className='tarjeta'>
