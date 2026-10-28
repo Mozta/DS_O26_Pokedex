@@ -5,6 +5,7 @@ import {
   MAX_EQUIPO, MENSAJES, crearEquipo, agregarPokemon, quitarPokemon, ponerNombre, validarEquipo,
 } from './logic/equipo'
 import { guardarEquipo, cargarEquipos, borrarEquipo } from './data/equipos'
+import { buscarPokemon } from './data/pokemones'
 import './App.css'
 
 const API = "https://pokeapi.co/api/v2"
@@ -79,10 +80,8 @@ function App() {
       setError(null)
       try {
         if (consulta) {
-          const res = await fetch(`${API}/pokemon/${consulta}`)
-          if (!res.ok) throw new Error(`Pokemon no encontrado (${res.status})`)
-          const data = await res.json()
-          if (!cancelado) setPokemones([normalizar(data)])
+          const pokemon = await buscarPokemon(consulta)
+          if (!consulta) setPokemones([pokemon])
         } else {
           // 1. La lista solo trae { name, url } de cada pokemon
           const res = await fetch(`${API}/pokemon?limit=${LIMITE}&offset=${offset}`)
