@@ -3,6 +3,7 @@ import { collection, doc, getDocs, setDoc } from 'firebase/firestore'
 import { db } from './firebase'
 import { PokemonCard } from './components/PokemonCard'
 import { normalizar } from './pokemon'
+import { MAX_EQUIPO, crearEquipo, agregarPokemon } from './logic/equipo'
 import './App.css'
 
 const API = "https://pokeapi.co/api/v2"
@@ -13,7 +14,7 @@ function App() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
 
-  const [equipo, setEquipo] = useState([])
+  const [equipo, setEquipo] = useState(crearEquipo())
   const [errorEquipo, setErrorEquipo] = useState(null)
   
   const [offset, setOffset] = useState(0)   // desde qué pokemon empieza la página
@@ -23,12 +24,13 @@ function App() {
   const [consulta, setConsulta] = useState('')  // lo que se busca ('' = ver la lista)
 
   async function agregar(p){
-    if (equipo.length >= 6) return
-    if (equipo.some((e) => e.id === p.id)) return
+    // Las reglas (máximo 6, sin repetidos) ya no viven aquí: las decide logic/equipo.js
+    const nuevo = agregarPokemon(equipo, p)
+    if (nuevo === equipo) return // no entró: no hay nada que guardar
     try {
       setErrorEquipo(null)
       await setDoc(doc(db, 'equipo', String(p.id)), p)
-      setEquipo([...equipo, p])
+      setEquipo(nuevo)
     } catch (err) {
       setErrorEquipo(`No se pudo guardar en el equipo: ${err.message}`)
     }
@@ -85,7 +87,10 @@ function App() {
   useEffect(() => {
     getDocs(collection(db, "equipo"))
     .then((snap) => 
-      setEquipo(snap.docs.map((d) => ({tipos: [], ...d.data(), id: Number(d.id)})))
+      setEquipo({
+        ...crearEquipo(),
+        pokemones: snap.docs.map((d) => ({tipos: [], ...d.data(), id: Number(d.id)})),
+      })
     )
     .catch((e) => setErrorEquipo(`No se pudo cargar el equipo: ${e.message}`))
   }, [])
@@ -124,10 +129,10 @@ function App() {
         </div>
       )}
 
-      <h2>Mi equipo ({equipo.length} / 6)</h2>
+      <h2>Mi equipo ({equipo.pokemones.length} / {MAX_EQUIPO})</h2>
       {errorEquipo && <p className='error'>{errorEquipo}</p>}
       <section className='equipo'>
-        {equipo.map((p) => <PokemonCard key={p.id} pokemon={p} />)}
+        {equipo.pokemones.map((p) => <PokemonCard key={p.id} pokemon={p} />)}
       </section>
 
 
