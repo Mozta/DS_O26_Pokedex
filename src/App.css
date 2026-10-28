@@ -1,7 +1,7 @@
 main { width: 100%; max-width: 1100px; box-sizing: border-box; margin: 2rem auto; padding: 0 1rem; text-align: center; font-family: system-ui; }
-.grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
-@media (max-width: 900px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 500px) { .grid { grid-template-columns: 1fr; } }
+.grid, .equipo { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
+@media (max-width: 900px) { .grid, .equipo { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 500px) { .grid, .equipo { grid-template-columns: 1fr; } }
 .tarjeta { border: 2px solid #202020; border-radius: 12px; padding: 1rem; }
 .tarjeta img { max-width: 100%; height: auto; }
 .tarjeta h2 { text-transform: capitalize; }
