@@ -11,9 +11,11 @@
     "test": "node --test"
   },
   "dependencies": {
+    "@tailwindcss/vite": "^4.3.5",
     "firebase": "^13.0.0",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "tailwindcss": "^4.3.5"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
